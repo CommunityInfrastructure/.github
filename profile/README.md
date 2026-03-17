@@ -261,7 +261,7 @@ Matrix message history, room state, user accounts, and federation data. Managed 
 
 ### Automated QA via UAT MCP
 
-All code changes are validated through an automated UAT (User Acceptance Testing) pipeline powered by a dedicated MCP (Model Context Protocol) server. The UAT MCP executes structured test scenarios against the running system, including:
+All code changes are validated through an automated UAT (User Acceptance Testing) pipeline powered by a dedicated [MCP (Model Context Protocol) server](https://github.com/whm3/UAT_MCP). The UAT MCP executes structured test scenarios against the running system, including:
 
 - **End-to-end SMS flow tests** — simulated inbound messages through the full pipeline (webhook receipt, signature validation, conversation creation, Matrix thread posting, operator reply, outbound delivery)
 - **Command validation** — every `!` command tested against expected behavior and error cases
