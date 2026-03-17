@@ -64,10 +64,10 @@ Backend services are **not accessible to the general public**. They are used exc
 | Service | Subdomain | Access |
 |---------|-----------|--------|
 | Synapse | `matrix.community-infra.org` | Matrix client API — requires authenticated Matrix account |
-| Element Web | `element.community-infra.org` | Operator chat workspace — HTTP Basic Auth + Matrix login |
+| Element Web | `element.community-infra.org` | Operator chat workspace — HTTPS Basic Auth + Matrix login |
 | SMS Bot | `sms.community-infra.org` | Twilio webhook endpoint only — HMAC signature validated, no public UI |
 
-Operator accounts are created exclusively by administrators via the `!enroll` command. There is no self-registration. Element Web is further protected by HTTP Basic Auth so that even the login page is not publicly visible.
+Operator accounts are created exclusively by administrators via the `!enroll` command. There is no self-registration. Element Web is further protected by HTTPS Basic Auth so that even the login page is not publicly visible.
 
 ### Container Stack
 
@@ -162,7 +162,7 @@ Log output is structured JSON (`{timestamp, level, service, component, message, 
 
 - Caddy is the only container with published ports (80, 443)
 - All inter-container traffic stays on the Docker bridge network
-- Element Web is gated behind HTTP Basic Auth
+- Element Web is gated behind HTTPS Basic Auth
 - Synapse has registration disabled — users are provisioned via admin API only
 - Matrix federation endpoints are exposed for protocol compliance but registration is closed
 
