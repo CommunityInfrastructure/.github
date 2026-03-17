@@ -299,25 +299,30 @@ Rollback is immediate via `promote-site.sh --backout <domain> <archive-name>`.
 
 The platform is designed to be fully provider-agnostic at every layer. No component has a hard dependency on a specific cloud provider, SMS carrier, or hosting environment. The entire stack can be relocated by changing DNS records and redeploying.
 
-**Messaging providers** are abstracted behind the `MessagingProviderAdapter` interface. Switching SMS carriers (e.g., Twilio to Infobip, or any future provider) requires implementing the adapter interface and setting an environment variable — no application code changes.
+**Messaging providers** are abstracted behind the `MessagingProviderAdapter` interface. The adapter defines a standard contract for webhook validation, inbound/outbound SMS and MMS, media handling, and delivery status tracking. Switching SMS carriers requires implementing this interface and setting a single environment variable (`MESSAGING_PROVIDER`) — no application code changes.
+
+**Twilio is the current SMS provider for development and testing only.** Twilio is a US-based company and not the intended production carrier. The production roadmap targets a GDPR-compliant European telecom provider to ensure SMS message metadata and delivery logs remain under EU data protection jurisdiction. The adapter abstraction makes this a drop-in replacement: implement the `MessagingProviderAdapter` interface for the new carrier, deploy with `MESSAGING_PROVIDER=<new-carrier>`, and all message routing, webhook handling, and delivery tracking work unchanged. An Infobip adapter is already implemented as a second reference.
 
 **Translation providers** follow the same pattern via the `TranslationAdapter` interface. Google Translate and DeepL are both implemented; adding a new provider is a single package with no core changes.
 
 **Infrastructure components** are standard open-source software with no vendor lock-in:
 
-| Component | Current | Alternatives |
-|-----------|---------|-------------|
-| Hosting | Hetzner (Germany) | Any VPS/cloud provider |
-| Container runtime | Docker Compose | Kubernetes, Podman, any OCI runtime |
-| Matrix homeserver | Synapse | Conduit, Dendrite |
-| Database | PostgreSQL | Already portable |
-| Reverse proxy | Caddy | Nginx, Traefik |
-| DNS/TLS | Cloudflare | Any DNS provider; Caddy handles Let's Encrypt directly |
-| Object storage | Cloudflare R2 (planned) | S3, MinIO, Backblaze B2 |
+| Component | Current | Production Target | Alternatives |
+|-----------|---------|-------------------|-------------|
+| SMS carrier | Twilio (test only) | EU GDPR-compliant telecom | Infobip (implemented), any carrier via adapter |
+| Hosting | Hetzner (Germany) | Hetzner or EU equivalent | Any VPS/cloud provider |
+| Container runtime | Docker Compose | Same | Kubernetes, Podman, any OCI runtime |
+| Matrix homeserver | Synapse | Same | Conduit, Dendrite |
+| Database | PostgreSQL | Same | Already portable |
+| Reverse proxy | Caddy | Same | Nginx, Traefik |
+| DNS/TLS | Cloudflare | Any EU DNS provider | Caddy handles Let's Encrypt directly |
+| Object storage | Cloudflare R2 (planned) | EU-resident storage | S3, MinIO, Backblaze B2 |
 
 ### GDPR and Data Sovereignty
 
-The current deployment runs on Hetzner infrastructure in **Germany**, providing EU data residency by default. The provider-agnostic architecture means the platform can be moved to any privacy-first, GDPR-backed hosting provider by:
+The current deployment runs on Hetzner infrastructure in **Germany**, providing EU data residency by default for all application data, Matrix message history, and operator activity. The production intent is to align **every external dependency** — including SMS carrier, DNS, translation API, and object storage — with GDPR-compliant, EU-jurisdictioned providers.
+
+The provider-agnostic architecture means the platform can be moved to any privacy-first, GDPR-backed hosting provider by:
 
 1. Provisioning a new VM with the target provider
 2. Updating DNS records to point to the new IP
