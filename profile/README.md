@@ -251,6 +251,76 @@ Matrix message history, room state, user accounts, and federation data. Managed 
 
 ---
 
+## Quality Assurance and Production Promotion
+
+### Automated QA via UAT MCP
+
+All code changes are validated through an automated UAT (User Acceptance Testing) pipeline powered by a dedicated MCP (Model Context Protocol) server. The UAT MCP executes structured test scenarios against the running system, including:
+
+- **End-to-end SMS flow tests** — simulated inbound messages through the full pipeline (webhook receipt, signature validation, conversation creation, Matrix thread posting, operator reply, outbound delivery)
+- **Command validation** — every `!` command tested against expected behavior and error cases
+- **Compliance checks** — CTIA keyword handling (STOP/HELP/START), opt-out enforcement, rate limit behavior
+- **Security boundary tests** — webhook signature rejection, PII redaction verification, role-based access enforcement
+- **Provider adapter tests** — messaging and translation adapters validated against contract interfaces
+
+No code is promoted to production without passing the full UAT suite. Test results are recorded and traceable to specific build artifacts.
+
+### Protected Production Promotion
+
+Production deployments follow a gated promotion workflow:
+
+1. **Development** — code changes are built and tested locally
+2. **Automated QA** — UAT MCP runs the full test suite against a running instance
+3. **Human UAT sign-off** — a human operator validates critical paths before production release. **No release is declared production-ready until human UAT is complete and declared successful.**
+4. **Production deploy** — `deploy-prod.sh` executes the full deployment pipeline
+5. **Post-deploy verification** — automated health checks confirm all services are responsive
+
+For website content, the promotion model uses a `test/` → `prod/` pipeline:
+- Collaborators push changes to `test/` for review
+- `promote-site.sh` archives the current `prod/`, copies `test/` to `prod/`, and commits
+- The sync pipeline detects the change and deploys to the server
+- Every prior version of `prod/` is preserved in `archive/` with timestamped snapshots backed up to GitHub
+
+Rollback is immediate via `promote-site.sh --backout <domain> <archive-name>`.
+
+---
+
+## Infrastructure Portability
+
+### Provider-Agnostic Architecture
+
+The platform is designed to be fully provider-agnostic at every layer. No component has a hard dependency on a specific cloud provider, SMS carrier, or hosting environment. The entire stack can be relocated by changing DNS records and redeploying.
+
+**Messaging providers** are abstracted behind the `MessagingProviderAdapter` interface. Switching SMS carriers (e.g., Twilio to Infobip, or any future provider) requires implementing the adapter interface and setting an environment variable — no application code changes.
+
+**Translation providers** follow the same pattern via the `TranslationAdapter` interface. Google Translate and DeepL are both implemented; adding a new provider is a single package with no core changes.
+
+**Infrastructure components** are standard open-source software with no vendor lock-in:
+
+| Component | Current | Alternatives |
+|-----------|---------|-------------|
+| Hosting | Hetzner (Germany) | Any VPS/cloud provider |
+| Container runtime | Docker Compose | Kubernetes, Podman, any OCI runtime |
+| Matrix homeserver | Synapse | Conduit, Dendrite |
+| Database | PostgreSQL | Already portable |
+| Reverse proxy | Caddy | Nginx, Traefik |
+| DNS/TLS | Cloudflare | Any DNS provider; Caddy handles Let's Encrypt directly |
+| Object storage | Cloudflare R2 (planned) | S3, MinIO, Backblaze B2 |
+
+### GDPR and Data Sovereignty
+
+The current deployment runs on Hetzner infrastructure in **Germany**, providing EU data residency by default. The provider-agnostic architecture means the platform can be moved to any privacy-first, GDPR-backed hosting provider by:
+
+1. Provisioning a new VM with the target provider
+2. Updating DNS records to point to the new IP
+3. Running `deploy-prod.sh` — the full stack deploys from scratch
+
+No data migration tooling is needed beyond the standard Docker volumes and database dumps. The entire infrastructure is defined as code and reproducible from a clean VM.
+
+This portability is a deliberate architectural choice: if a hosting provider changes terms, pricing, or jurisdiction compliance, the platform can be relocated without any application changes — only DNS and a redeploy.
+
+---
+
 ## Deployment
 
 All deployment is automated via `scripts/deploy-prod.sh`:
@@ -267,6 +337,8 @@ All deployment is automated via `scripts/deploy-prod.sh`:
 
 New domains are onboarded via `scripts/onboard-domain.sh` which automates DNS, TLS, website repo creation, and infrastructure config updates.
 
+Website content is synced independently via `scripts/sync-websites.sh`, which polls website repos for changes every 5 minutes, archives the current live content, and deploys updates. Archive commits are backed up to GitHub separately via `scripts/push-archives.sh` using write credentials distinct from the read-only sync agent.
+
 ---
 
 ## Security Goals (Ongoing)
@@ -278,3 +350,4 @@ New domains are onboarded via `scripts/onboard-domain.sh` which automates DNS, T
 - [ ] Periodic key rotation for PHONE_HMAC_KEY and PHONE_ENCRYPTION_KEY
 - [ ] Automated vulnerability scanning of container images
 - [ ] Backup and restore procedures for Synapse/PostgreSQL state
+- [ ] GitHub App service identity for automated sync (replacing PAT)
