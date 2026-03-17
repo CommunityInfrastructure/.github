@@ -331,6 +331,7 @@ The platform is designed to be fully provider-agnostic at every layer. No compon
 | Object storage | Cloudflare R2 (planned) | EU-resident storage | S3, MinIO, Backblaze B2 |
 | [somersethelps.org](https://somersethelps.org) | Somerset County, NJ | Frontend |
 | [somersetcares.org](https://somersetcares.org) | Somerset County, NJ | Frontend |
+| [nohatenj.org](https://nohatenj.org) | New Jersey | Frontend |
 
 ### GDPR and Data Sovereignty
 
