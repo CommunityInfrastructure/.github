@@ -329,6 +329,7 @@ The platform is designed to be fully provider-agnostic at every layer. No compon
 | Reverse proxy | Caddy | Same | Nginx, Traefik |
 | DNS/TLS | Cloudflare | Any EU DNS provider | Caddy handles Let's Encrypt directly |
 | Object storage | Cloudflare R2 (planned) | EU-resident storage | S3, MinIO, Backblaze B2 |
+| [somersethelps.org](https://somersethelps.org) | Somerset County, NJ | Frontend |
 
 ### GDPR and Data Sovereignty
 
