@@ -69,6 +69,12 @@ Backend services are **not accessible to the general public**. They are used exc
 
 Operator accounts are created exclusively by administrators via the `!enroll` command. There is no self-registration. Element Web is further protected by HTTPS Basic Auth so that even the login page is not publicly visible.
 
+### Operator Mobile Access
+
+Because the backend is built on the open [Matrix protocol](https://matrix.org/), operators are not limited to the hosted Element Web interface. Operators can respond to community members from any compatible Matrix client on any device, including mobile. This means helpdesk operators can work from their phones in the field during crisis events.
+
+Compatible clients include [FluffyChat](https://fluffychat.im/), [Element X](https://element.io/), [SchildiChat](https://schildi.chat/), [Nheko](https://nheko.im/nheko-reborn/nheko), [Cinny](https://cinny.in/), and [dozens more](https://matrix.org/ecosystem/clients/) across iOS, Android, desktop, web, and terminal. Any Matrix client that supports threads (MSC3440) provides the full operator experience — claim conversations, reply to community members, run `!` commands, and receive delivery status updates.
+
 ### Container Stack
 
 | Container | Image | Purpose |
