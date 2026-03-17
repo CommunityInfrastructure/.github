@@ -35,6 +35,8 @@ Changes pushed to `prod/` are automatically synced to the production server ever
 
 The platform provides SMS/MMS-to-chat bridging for community crisis response. Community members text a public phone number and their messages are routed into a secure Matrix chat workspace where trained volunteer operators can respond. The system is designed so operators never see raw phone numbers, all message content is redacted from logs, and every version of every public site is archived before updates.
 
+**No AI or machine learning is used in the runtime system.** The entire backend is deterministic, auditable application code — TypeScript, SQL, and documented REST API calls to well-defined services (Twilio for SMS delivery, Google/DeepL for translation, Matrix client-server API for chat). There are no calls to black-box AI providers, no LLM inference, no probabilistic decision-making in the message pipeline. Every action the system takes is traceable to explicit code paths. When a community member texts for help, a real human operator reads and responds — the platform is the routing and security layer, not a chatbot.
+
 ```
 Community Member                    Volunteer Operators
       |                                     |
@@ -261,15 +263,15 @@ Matrix message history, room state, user accounts, and federation data. Managed 
 
 ### Automated QA via UAT MCP
 
-All code changes are validated through an automated UAT (User Acceptance Testing) pipeline powered by a dedicated [MCP (Model Context Protocol) server](https://github.com/whm3/UAT_MCP). The UAT MCP executes structured test scenarios against the running system, including:
+All code changes are validated through a UAT (User Acceptance Testing) pipeline powered by a dedicated [MCP (Model Context Protocol) server](https://github.com/whm3/UAT_MCP). The UAT MCP orchestrates structured test scenarios and **engages human testers** to validate the system — there are always humans in the loop. Automated scaffolding sets up test conditions and collects results, but human testers execute the critical path validations:
 
-- **End-to-end SMS flow tests** — simulated inbound messages through the full pipeline (webhook receipt, signature validation, conversation creation, Matrix thread posting, operator reply, outbound delivery)
+- **End-to-end SMS flow tests** — human testers send real SMS messages through the full pipeline and verify delivery, thread creation, and operator response flow
 - **Command validation** — every `!` command tested against expected behavior and error cases
 - **Compliance checks** — CTIA keyword handling (STOP/HELP/START), opt-out enforcement, rate limit behavior
 - **Security boundary tests** — webhook signature rejection, PII redaction verification, role-based access enforcement
 - **Provider adapter tests** — messaging and translation adapters validated against contract interfaces
 
-No code is promoted to production without passing the full UAT suite. Test results are recorded and traceable to specific build artifacts.
+No code is promoted to production without passing the full UAT suite with human sign-off. Test results are recorded and traceable to specific build artifacts.
 
 ### Protected Production Promotion
 
