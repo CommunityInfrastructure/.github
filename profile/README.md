@@ -47,19 +47,25 @@ Community Member                    Volunteer Operators
                    static sites            (PostgreSQL)
 ```
 
+### Frontend Domains (Community-Facing)
+
+Frontend domains are **read-only community announcement boards**. They serve static content — local news, resource directories, event information, and crisis updates — published by community coordinators. There is no user login, no database, and no dynamic server-side content.
+
+Each frontend includes a **"Need help?" chat interface** that connects community members to trained helpdesk operators via SMS. Community members text a published phone number displayed on the site and their messages are routed to the operator workspace. The frontend itself never handles message data — it simply directs people to the SMS channel.
+
+Frontend domains share no backend state. They are purely static HTML/CSS/JS served by Caddy from per-domain directories.
+
 ### Backend Services (community-infra.org)
 
-All backend services run on a single Hetzner VM behind Caddy for TLS termination:
+Backend services are **not accessible to the general public**. They are used exclusively by enrolled helpdesk operators and system administrators. All backend interfaces are gated behind authentication:
 
-| Service | Subdomain | Role |
-|---------|-----------|------|
-| Synapse | `matrix.community-infra.org` | Matrix homeserver (federation + client API) |
-| Element Web | `element.community-infra.org` | Operator web interface (basic auth gated) |
-| SMS Bot | `sms.community-infra.org` | Twilio webhook receiver + SMS bridge |
+| Service | Subdomain | Access |
+|---------|-----------|--------|
+| Synapse | `matrix.community-infra.org` | Matrix client API — requires authenticated Matrix account |
+| Element Web | `element.community-infra.org` | Operator chat workspace — HTTP Basic Auth + Matrix login |
+| SMS Bot | `sms.community-infra.org` | Twilio webhook endpoint only — HMAC signature validated, no public UI |
 
-### Frontend Domains
-
-Community-facing domains serve static HTML from per-domain directories. Each domain also provides Matrix `.well-known` discovery so clients can find the homeserver. Frontend domains share no backend state — they are purely static content served by Caddy.
+Operator accounts are created exclusively by administrators via the `!enroll` command. There is no self-registration. Element Web is further protected by HTTP Basic Auth so that even the login page is not publicly visible.
 
 ### Container Stack
 
