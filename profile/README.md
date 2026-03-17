@@ -75,6 +75,12 @@ Because the backend is built on the open [Matrix protocol](https://matrix.org/),
 
 Compatible clients include [FluffyChat](https://fluffychat.im/), [Element X](https://element.io/), [SchildiChat](https://schildi.chat/), [Nheko](https://nheko.im/nheko-reborn/nheko), [Cinny](https://cinny.in/), and [dozens more](https://matrix.org/ecosystem/clients/) across iOS, Android, desktop, web, and terminal. Any Matrix client that supports threads (MSC3440) provides the full operator experience — claim conversations, reply to community members, run `!` commands, and receive delivery status updates.
 
+### Voice and Multi-Geo Routing (In Development)
+
+Voice call routing is in active development. Inbound calls to published phone numbers will be routed to available operators in the corresponding geographic area, with the same claim and dispatch model used for SMS conversations. Voice events are already captured and logged by the platform (the `voice_events` table and provider adapter interface support this today).
+
+Operators will be able to work across multiple geographic areas simultaneously, handling both voice calls and text conversations from a single workspace. An operator enrolled in Frenchtown and Warren County, for example, would see inbound conversations from both communities and can claim and respond to either. Geographic assignment is managed per-operator, and operators can be added or removed from any geo at any time without service interruption.
+
 ### Container Stack
 
 | Container | Image | Purpose |
