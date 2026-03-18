@@ -16,6 +16,9 @@ Shared platform services for community crisis response organizations across New 
 | [flemingtoncares.org](https://flemingtoncares.org) | Flemington, NJ | Frontend |
 | [warrencares.org](https://warrencares.org) | Warren County, NJ | Frontend |
 | [warrenhelps.org](https://warrenhelps.org) | Warren County, NJ | Frontend |
+| [somersethelps.org](https://somersethelps.org) | Somerset County, NJ | Frontend |
+| [somersetcares.org](https://somersetcares.org) | Somerset County, NJ | Frontend |
+| [nohatenj.org](https://nohatenj.org) | New Jersey | Frontend |
 
 ## Website Repositories
 
@@ -329,9 +332,6 @@ The platform is designed to be fully provider-agnostic at every layer. No compon
 | Reverse proxy | Caddy | Same | Nginx, Traefik |
 | DNS/TLS | Cloudflare | Any EU DNS provider | Caddy handles Let's Encrypt directly |
 | Object storage | Cloudflare R2 (planned) | EU-resident storage | S3, MinIO, Backblaze B2 |
-| [somersethelps.org](https://somersethelps.org) | Somerset County, NJ | Frontend |
-| [somersetcares.org](https://somersetcares.org) | Somerset County, NJ | Frontend |
-| [nohatenj.org](https://nohatenj.org) | New Jersey | Frontend |
 
 ### GDPR and Data Sovereignty
 
