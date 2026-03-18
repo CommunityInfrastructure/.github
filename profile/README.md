@@ -74,6 +74,8 @@ Backend services are **not accessible to the general public**. They are used exc
 
 Operator accounts are created exclusively by administrators via the `!enroll` command. There is no self-registration.
 
+**MVP requirement:** every human responder, supervisor, and administrator must enroll in TOTP MFA before using the production system. Account activation is not complete until TOTP setup succeeds, and admin recovery/reset procedures must exist before launch.
+
 **Element Web has no public DNS records and is restricted to Tailscale VPN connections only.** The Caddy reverse proxy enforces source IP validation — only the Tailscale CGNAT range (100.64.0.0/10) is permitted. Connections from the public internet receive a 403 response directing users to a native Matrix client instead. This eliminates the web application as an attack surface entirely. Operators who need Element Web must be on the Tailscale network; all other operators use native Matrix clients.
 
 ### Operator Mobile Access
@@ -81,6 +83,8 @@ Operator accounts are created exclusively by administrators via the `!enroll` co
 Because the backend is built on the open [Matrix protocol](https://matrix.org/), operators are not limited to the hosted Element Web interface. Operators can respond to community members from any compatible Matrix client on any device, including mobile. This means helpdesk operators can work from their phones in the field during crisis events.
 
 Compatible clients include [FluffyChat](https://fluffychat.im/), [Element X](https://element.io/), [SchildiChat](https://schildi.chat/), [Nheko](https://nheko.im/nheko-reborn/nheko), [Cinny](https://cinny.in/), and [dozens more](https://matrix.org/ecosystem/clients/) across iOS, Android, desktop, web, and terminal. Any Matrix client that supports threads (MSC3440) provides the full operator experience — claim conversations, reply to community members, run `!` commands, and receive delivery status updates.
+
+TOTP MFA remains mandatory regardless of client choice. Native-client support is useful for field work, but it does not bypass the MVP authentication baseline: enrolled users must still complete TOTP setup and use it during login.
 
 ### Voice and Multi-Geo Routing (In Development)
 
@@ -147,6 +151,7 @@ When configured with a translation provider (Google Translate or DeepL):
 3. **Operators never see raw phone numbers.** Only the last 4 digits are shown in the chat interface.
 4. **Least privilege by default.** The sync agent uses a read-only credential. The bot's Matrix token is scoped to its own user. Caddy is the only internet-facing service.
 5. **No registration.** All user accounts are created by administrators via the `!enroll` command.
+6. **MFA is part of MVP.** All human accounts require TOTP MFA before production access is granted.
 
 ### Phone Number Protection
 
@@ -182,6 +187,7 @@ Log output is structured JSON (`{timestamp, level, service, component, message, 
 - Caddy is the only container with published ports (80, 443)
 - All inter-container traffic stays on the Docker bridge network
 - Element Web is not accessible from the public internet — restricted to Tailscale VPN (100.64.0.0/10) with HTTPS Basic Auth as a second factor
+- All human users must complete TOTP MFA enrollment before production access; Tailscale and Basic Auth do not replace MFA for Matrix access
 - No public DNS records exist for Element subdomains
 - Synapse has registration disabled — users are provisioned via admin API only
 - Matrix federation endpoints are exposed for protocol compliance but registration is closed
