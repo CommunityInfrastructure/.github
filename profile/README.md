@@ -202,7 +202,7 @@ Log output is structured JSON (`{timestamp, level, service, component, message, 
 The platform supports multiple community organizations on shared infrastructure. Routing is configured via `ORG_ROUTING_MAP`, a JSON mapping from intake phone number digits to organization identifiers:
 
 ```json
-{"19086506558": "frenchtown", "18779080498": "frenchtown"}
+{"1XXXXXXXXXX": "frenchtown", "1XXXXXXXXXX": "hunterdon"}
 ```
 
 Each conversation is tagged with an `organizationId` at creation time. All database queries (conversation lookup, queue, search, reporting) are scoped by organization, ensuring data isolation between communities sharing the same Twilio numbers or Matrix homeserver.
