@@ -45,8 +45,8 @@ Beyond SMS bridging, the Matrix backend provides a **secure, organization-wide m
 ```
 Community Member                    Volunteer Operators
       |                                     |
-  SMS/MMS                          Element Web (Matrix client)
-      |                                     |
+  SMS/MMS                      Any Matrix client, any device
+      |                        (FluffyChat, Element X, SchildiChat, ...)
       v                                     v
   [Twilio] ──POST──> [Caddy] ──> [Bot] <──> [Synapse]
                         |                      |
@@ -68,15 +68,15 @@ Backend services are **not accessible to the general public**. They are used exc
 
 | Service | Subdomain | Access |
 |---------|-----------|--------|
-| Synapse | `matrix.community-infra.org` | Matrix client API — requires authenticated Matrix account |
-| Element Web | `element.community-infra.org` | **Tailscale VPN only** — not reachable from the public internet |
+| Synapse | `matrix.community-infra.org` | Matrix client API — requires authenticated Matrix account. **Primary operator access point.** |
+| Element Web (optional) | `element.community-infra.org` | **Break-glass only.** Tailscale VPN required, not reachable from public internet. Not needed for normal operations — all operator tasks can be completed via native Matrix clients. |
 | SMS Bot | `sms.community-infra.org` | Twilio webhook endpoint only — HMAC signature validated, no public UI |
 
-Operator accounts are created exclusively by administrators via the `!enroll` command. There is no self-registration.
+Operator accounts are created exclusively by administrators via the `!invite` command, which generates a secure enrollment URL. The admin sends this URL to the new user via an out-of-band secure channel (e.g. Signal). The user visits the URL, sets their password, and enrolls TOTP MFA — no credentials ever transit through Matrix. The `!enroll` command exists as a break-glass fallback for creating the initial admin account. There is no self-registration.
 
 **MVP requirement:** every human responder, supervisor, and administrator must enroll in TOTP MFA before using the production system. Account activation is not complete until TOTP setup succeeds, and admin recovery/reset procedures must exist before launch.
 
-**Element Web has no public DNS records and is restricted to Tailscale VPN connections only.** The Caddy reverse proxy enforces source IP validation — only the Tailscale CGNAT range (100.64.0.0/10) is permitted. Connections from the public internet receive a 403 response directing users to a native Matrix client instead. This eliminates the web application as an attack surface entirely. Operators who need Element Web must be on the Tailscale network; all other operators use native Matrix clients.
+**Element Web is optional and non-essential.** It has no public DNS records and is restricted to Tailscale VPN connections only (Caddy enforces source IP validation against the Tailscale CGNAT range 100.64.0.0/10). The Element Web container does not need to be running for normal operations — 100% of operator activities can be completed via native Matrix clients connecting to `matrix.community-infra.org`. Element Web exists as a break-glass access path for admin diagnostics or situations where a native client is unavailable. If resource overhead is a concern, the Element container can be stopped without affecting any platform functionality.
 
 ### Operator Mobile Access
 
@@ -99,7 +99,7 @@ Operators will be able to work across multiple geographic areas simultaneously, 
 | `caddy` | caddy:2-alpine | TLS termination, reverse proxy, static file serving |
 | `synapse` | matrixdotorg/synapse | Matrix homeserver |
 | `postgres` | postgres:16-alpine | Synapse database backend |
-| `element` | vectorim/element-web | Operator chat UI |
+| `element` | vectorim/element-web | Break-glass web UI (optional — can be stopped to save resources) |
 | `bot` | interactiveagent-bot | SMS/MMS bridge, webhook server, command handler |
 
 All containers run on a single Docker bridge network. Only Caddy exposes ports 80/443 to the internet. Inter-service communication is container-to-container via Docker DNS.
@@ -119,7 +119,7 @@ All containers run on a single Docker bridge network. Only Caddy exposes ports 8
 7. Keyword check: `STOP`, `HELP`, `START` are handled inline per CTIA/TCPA requirements
 8. Rate limit check (20 inbound messages per number per minute)
 9. Bot finds or creates a conversation thread in the Matrix dispatch room
-10. Message appears as a thread reply in Element Web for operators to see
+10. Message appears as a thread reply in the Matrix dispatch room for operators to see (via any Matrix client)
 11. For MMS: media is downloaded from Twilio (authenticated), uploaded to Synapse, and posted as an image in the thread
 
 ### Outbound (Operator to Community Member)
@@ -186,7 +186,7 @@ Log output is structured JSON (`{timestamp, level, service, component, message, 
 
 - Caddy is the only container with published ports (80, 443)
 - All inter-container traffic stays on the Docker bridge network
-- Element Web is not accessible from the public internet — restricted to Tailscale VPN (100.64.0.0/10) with HTTPS Basic Auth as a second factor
+- Element Web (optional, break-glass only) is not accessible from the public internet — restricted to Tailscale VPN (100.64.0.0/10) with HTTPS Basic Auth as a second factor. Can be stopped without affecting operations.
 - All human users must complete TOTP MFA enrollment before production access; Tailscale and Basic Auth do not replace MFA for Matrix access
 - No public DNS records exist for Element subdomains
 - Synapse has registration disabled — users are provisioned via admin API only
@@ -236,8 +236,14 @@ Operators interact with the system via `!` commands in Matrix:
 | `!help` | operator | Show available commands |
 | `!status` | supervisor | System health and statistics |
 | `!report` | supervisor | Generate activity reports |
-| `!enroll` | admin | Create a new operator account |
+| `!assign` | supervisor | Assign a user to a geographic room |
+| `!unassign` | supervisor | Remove a user from a geographic room |
+| `!invite` | admin | Generate secure enrollment URL (sent via Signal) |
+| `!enroll` | admin | Create a new operator account (break-glass, no TOTP) |
+| `!revoke` | admin | Revoke an enrollment invitation |
 | `!deactivate` | admin | Deactivate an operator account |
+| `!userrole` | admin | Change a user's role |
+| `!totp-reset` | admin | Reset a user's TOTP secret |
 
 ### Conversation Lifecycle
 
