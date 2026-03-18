@@ -382,3 +382,9 @@ Website content is synced independently via `scripts/sync-websites.sh`, which po
 - [ ] Automated vulnerability scanning of container images
 - [ ] Backup and restore procedures for Synapse/PostgreSQL state
 - [ ] GitHub App service identity for automated sync (replacing PAT)
+
+---
+
+## Related Projects
+
+- **[CivicEarworm](https://github.com/thirtysevenfox/civicearworm)** — A curriculum guide for peaceful civic participation, organized as a 28-song album across seven modules covering digital safety, crowd dynamics, legal awareness, evidence handling, aftercare, and exit strategy. Teaches calm, lawful, sustainable civic engagement with a focus on restraint, safety, and going home intact.
