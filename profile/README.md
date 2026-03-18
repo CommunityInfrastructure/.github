@@ -38,6 +38,8 @@ Changes pushed to `prod/` are automatically synced to the production server ever
 
 The platform provides SMS/MMS-to-chat bridging for community crisis response. Community members text a public phone number and their messages are routed into a secure Matrix chat workspace where trained volunteer operators can respond. The system is designed so operators never see raw phone numbers, all message content is redacted from logs, and every version of every public site is archived before updates.
 
+Beyond SMS bridging, the Matrix backend provides a **secure, organization-wide messaging platform** for all enrolled operators and administrators. Because Matrix supports end-to-end encrypted rooms, direct messages, and group channels, the same infrastructure that routes community SMS conversations also serves as the organization's internal communications system. Operators can coordinate across teams, share case notes in private rooms, escalate to supervisors, and receive system alerts — all within the same encrypted workspace, accessible from any Matrix client on any device. No separate messaging tool (Slack, Teams, Signal) is needed.
+
 **No AI or machine learning is used in the runtime system.** The entire backend is deterministic, auditable application code — TypeScript, SQL, and documented REST API calls to well-defined services (Twilio for SMS delivery, Google/DeepL for translation, Matrix client-server API for chat). There are no calls to black-box AI providers, no LLM inference, no probabilistic decision-making in the message pipeline. Every action the system takes is traceable to explicit code paths. When a community member texts for help, a real human operator reads and responds — the platform is the routing and security layer, not a chatbot.
 
 ```
