@@ -67,10 +67,12 @@ Backend services are **not accessible to the general public**. They are used exc
 | Service | Subdomain | Access |
 |---------|-----------|--------|
 | Synapse | `matrix.community-infra.org` | Matrix client API — requires authenticated Matrix account |
-| Element Web | `element.community-infra.org` | Operator chat workspace — HTTPS Basic Auth + Matrix login |
+| Element Web | `element.community-infra.org` | **Tailscale VPN only** — not reachable from the public internet |
 | SMS Bot | `sms.community-infra.org` | Twilio webhook endpoint only — HMAC signature validated, no public UI |
 
-Operator accounts are created exclusively by administrators via the `!enroll` command. There is no self-registration. Element Web is further protected by HTTPS Basic Auth so that even the login page is not publicly visible.
+Operator accounts are created exclusively by administrators via the `!enroll` command. There is no self-registration.
+
+**Element Web has no public DNS records and is restricted to Tailscale VPN connections only.** The Caddy reverse proxy enforces source IP validation — only the Tailscale CGNAT range (100.64.0.0/10) is permitted. Connections from the public internet receive a 403 response directing users to a native Matrix client instead. This eliminates the web application as an attack surface entirely. Operators who need Element Web must be on the Tailscale network; all other operators use native Matrix clients.
 
 ### Operator Mobile Access
 
@@ -177,7 +179,8 @@ Log output is structured JSON (`{timestamp, level, service, component, message, 
 
 - Caddy is the only container with published ports (80, 443)
 - All inter-container traffic stays on the Docker bridge network
-- Element Web is gated behind HTTPS Basic Auth
+- Element Web is not accessible from the public internet — restricted to Tailscale VPN (100.64.0.0/10) with HTTPS Basic Auth as a second factor
+- No public DNS records exist for Element subdomains
 - Synapse has registration disabled — users are provisioned via admin API only
 - Matrix federation endpoints are exposed for protocol compliance but registration is closed
 
