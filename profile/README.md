@@ -86,11 +86,74 @@ Compatible clients include [FluffyChat](https://fluffychat.im/), [Element X](htt
 
 TOTP MFA remains mandatory regardless of client choice. Native-client support is useful for field work, but it does not bypass the MVP authentication baseline: enrolled users must still complete TOTP setup and use it during login.
 
-### Voice and Multi-Geo Routing (In Development)
+### Voice Call Routing and Multi-Geo Dispatch (In Development)
 
-Voice call routing is in active development. Inbound calls to published phone numbers will be routed to available operators in the corresponding geographic area, with the same claim and dispatch model used for SMS conversations. Voice events are already captured and logged by the platform (the `voice_events` table and provider adapter interface support this today).
+Voice call routing is in active development. Inbound calls to published community help numbers will be routed to available on-call operators in the corresponding geographic area, using the same claim and dispatch model proven for SMS conversations. Voice events are already captured and logged by the platform (the `voice_events` table and provider adapter interface support this today).
 
-Operators will be able to work across multiple geographic areas simultaneously, handling both voice calls and text conversations from a single workspace. An operator enrolled in Frenchtown and Warren County, for example, would see inbound conversations from both communities and can claim and respond to either. Geographic assignment is managed per-operator, and operators can be added or removed from any geo at any time without service interruption.
+#### Inbound Call Routing
+
+When a community member calls a published help number, the platform routes the call to the on-call operator roster for that geographic area:
+
+1. **Caller dials the published help number** — the same number displayed on community websites for SMS
+2. **Provider routes the call** to the platform's voice webhook endpoint
+3. **Bot consults the on-call roster** for the organization mapped to that phone number
+4. **Call is forwarded** to the first available on-call operator
+5. **If the operator does not answer**, the call cascades to the next operator on the roster
+6. **If no operator is available**, the caller hears a configurable message and can leave a voicemail or be directed to SMS
+7. **Call event is logged** in the `voice_events` table with timestamp, duration, routing path, and outcome
+
+Operators can **transfer calls** to other on-call operators during a live conversation. The transfer is logged as a separate voice event linked to the original call, preserving the full routing chain for audit purposes.
+
+#### Number Masking and Caller Privacy
+
+Callers only ever see the published community help number — operator personal phone numbers are never exposed. The platform uses provider-level number masking so that:
+
+- **Inbound calls** display the community help number as the caller ID when forwarded to operators
+- **Outbound callbacks** from operators route through the published number, not the operator's personal line
+- **Call logs** on both sides show only the published help number
+- Operators see the same masked identifier used for SMS (`***1234`) — never the caller's full phone number
+
+This is the voice equivalent of the phone number protection already enforced for SMS: the operator workspace shows only the last 4 digits, and the published help number is the only number visible to community members at every stage of the call.
+
+#### On-Call Roster Management
+
+Each geographic area maintains an ordered on-call roster. Supervisors manage rosters using operator commands:
+
+- Operators are assigned to geographic areas via `!assign` and removed via `!unassign`
+- On-call ordering determines the cascade sequence for inbound calls
+- An operator can be on-call for multiple geographic areas simultaneously — a volunteer covering both Frenchtown and Warren County will receive calls from both communities
+- Roster changes take effect immediately with no service interruption
+- When an operator goes off-duty, calls automatically cascade to the next available operator
+
+#### Integration with SMS Dispatch
+
+Voice and SMS operate as parallel channels within the same operator workspace:
+
+- An inbound voice call creates a conversation thread in the Matrix dispatch room, just like an inbound SMS
+- Operators can see both voice call events and text messages in a unified view
+- If a caller also texts the same number, the platform correlates both channels to the same conversation thread (matched by phone token)
+- After a voice call ends, operators can follow up via SMS through the existing text reply flow
+- Voice call metadata (duration, outcome, transfer history) appears in the conversation thread alongside any SMS messages
+
+#### Call Logging and Audit Trail
+
+Every voice interaction is logged with full traceability:
+
+| Field | Description |
+|-------|-------------|
+| `call_id` | Unique identifier from the voice provider |
+| `organization_id` | Geographic area / community the call was routed to |
+| `phone_token` | HMAC-SHA256 token of caller's number (same tokenization as SMS) |
+| `encrypted_phone` | AES-256-GCM encrypted caller number (decrypted only for callback) |
+| `operator_id` | Matrix user ID of the operator who answered |
+| `start_time` / `end_time` | Call timing with second-level precision |
+| `duration` | Total call duration |
+| `routing_path` | Ordered list of operators the call was offered to before answer |
+| `outcome` | answered, missed, voicemail, transferred, abandoned |
+| `transfer_history` | Chain of operator-to-operator transfers during the call |
+| `matrix_thread_id` | Link to the conversation thread in the dispatch room |
+
+Voice call logs are subject to the same redaction rules as SMS logs — no phone numbers in plaintext, no call audio content in logs, and all PII fields are encrypted or tokenized.
 
 ### Container Stack
 
@@ -191,6 +254,19 @@ Log output is structured JSON (`{timestamp, level, service, component, message, 
 - No public DNS records exist for Element subdomains
 - Synapse has registration disabled — users are provisioned via admin API only
 - Matrix federation endpoints are exposed for protocol compliance but registration is closed
+
+### Voice Call Security
+
+Voice calls are protected by the same security principles as SMS, extended to the voice channel:
+
+- **End-to-end call routing encryption** — all call signaling and audio between the platform and the voice provider uses TLS-encrypted channels. Provider-to-operator call legs use the provider's encrypted voice network. No call audio is recorded, stored, or processed by the platform.
+- **Number masking at every hop** — community members see only the published help number; operators see only the masked identifier (`***1234`). The caller's full phone number is never displayed, logged in plaintext, or transmitted to the operator's device. Provider-level masking ensures that even the operator's phone carrier records show only the platform's routing number, not the caller's personal number.
+- **Phone token consistency** — voice calls use the same HMAC-SHA256 tokenization as SMS. A caller who texts and calls the same help number is identified by the same opaque token, enabling conversation correlation without plaintext phone storage.
+- **Encrypted phone storage** — caller phone numbers for voice events are encrypted with AES-256-GCM using the same `PHONE_ENCRYPTION_KEY` as SMS, with per-record random IVs. Decryption occurs only at callback initiation time.
+- **Call metadata redaction** — voice event logs pass through the same redaction pipeline as all other log output. Phone numbers, operator identifiers, and any transcription content (if ever added) are redacted before log emission.
+- **Audit trail integrity** — every call routing decision, transfer, and outcome is logged as a discrete event with immutable timestamps. The routing path (which operators were offered the call and in what order) is preserved for incident review and quality assurance.
+- **Role-based call access** — only operators assigned to a geographic area via `!assign` receive calls for that area. Supervisors can reassign operators in real time, and access changes take effect immediately.
+- **No call recording** — the platform does not record voice calls. Call audio is ephemeral and exists only for the duration of the live connection. The audit trail captures metadata (timing, routing, outcome) but never call content.
 
 ### Compliance Controls
 
